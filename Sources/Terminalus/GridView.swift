@@ -68,10 +68,9 @@ final class GridCellView: NSView, NSDraggingSource {
         badge.name = s.folder
         badge.isHidden = s.folder == nil
         dot.status = s.status
-        modelLabel.stringValue = s.modelName ?? s.agentName ?? ""
+        modelLabel.stringValue = [s.plan?.chip, s.modelName ?? s.agentName].compactMap { $0 }.joined(separator: " · ")
         tagStrip.layer?.backgroundColor = s.tag?.color.cgColor
         tagStrip.isHidden = s.tag == nil
-        toolTip = s.detailText + "\n\nПеретащите шапку, чтобы переставить окно. Двойной клик по шапке — открыть."
         needsLayout = true
     }
 
@@ -96,7 +95,7 @@ final class GridCellView: NSView, NSDraggingSource {
         badge.frame = NSRect(x: 10, y: top + (h - bs) / 2, width: bs, height: bs)
         let dx: CGFloat = badge.isHidden ? 10 : 10 + bs + 6
         dot.frame = NSRect(x: dx, y: top + (h - d) / 2, width: d, height: d)
-        let mw = modelLabel.stringValue.isEmpty ? 0 : min(96, ceil(modelLabel.intrinsicContentSize.width) + 2)
+        let mw = modelLabel.stringValue.isEmpty ? 0 : min(140, ceil(modelLabel.intrinsicContentSize.width) + 2)
         modelLabel.frame = NSRect(x: bounds.width - 52 - mw, y: top + (h - 13) / 2, width: mw, height: 13)
         titleLabel.frame = NSRect(x: dx + d + 7, y: top + (h - 14) / 2,
                                   width: max(0, bounds.width - 62 - mw - (dx + d + 7)), height: 14)
