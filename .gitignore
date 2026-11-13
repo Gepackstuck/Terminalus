@@ -1,0 +1,16 @@
+# сборка и релизы
+build/
+dist/
+*.dSYM/
+
+# системное
+.DS_Store
+*.xcuserstate
+xcuserdata/
+
+# SwiftTerm: в репозитории нужны только исходники библиотеки и лицензия
+Vendor/SwiftTerm/*
+!Vendor/SwiftTerm/Sources/
+!Vendor/SwiftTerm/LICENSE
+Vendor/SwiftTerm/Sources/*
+!Vendor/SwiftTerm/Sources/SwiftTerm/

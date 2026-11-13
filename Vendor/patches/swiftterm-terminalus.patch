@@ -1,0 +1,26 @@
+diff --git a/Sources/SwiftTerm/Mac/MacTerminalView.swift b/Sources/SwiftTerm/Mac/MacTerminalView.swift
+index 112fd4d..cffd6d7 100644
+--- a/Sources/SwiftTerm/Mac/MacTerminalView.swift
++++ b/Sources/SwiftTerm/Mac/MacTerminalView.swift
+@@ -3229,11 +3229,16 @@ open class TerminalView: NSView, NSTextInputClient, NSUserInterfaceValidations,
+             lines = Int(scrollAccumulator / cellHeight)
+             scrollAccumulator -= CGFloat(lines) * cellHeight
+         } else {
+-            scrollAccumulator = 0
+-            // A non-precise wheel notch must always move at least one line, even
+-            // when a low sensitivity would otherwise round it away to zero.
+-            let rounded = Int(scaledDelta.rounded())
+-            lines = rounded != 0 ? rounded : (event.scrollingDeltaY > 0 ? 1 : -1)
++            // TERMINALUS PATCH: утилиты вроде Mos сглаживают колесо потоком мелких
++            // событий с дробными дельтами (в строках). Раньше каждое такое событие
++            // округлялось и принудительно давало ±1 строку → рывки и слишком быстрый
++            // скролл. Теперь копим дробный остаток (в пунктах), как для трекпада.
++            if (scaledDelta > 0) != (scrollAccumulator > 0) && scrollAccumulator != 0 {
++                scrollAccumulator = 0   // смена направления
++            }
++            scrollAccumulator += scaledDelta * cellHeight
++            lines = Int(scrollAccumulator / cellHeight)
++            scrollAccumulator -= CGFloat(lines) * cellHeight
+         }
+         if lines == 0 {
+             return
