@@ -223,32 +223,6 @@ MainActor.assumeIsolated {
     settle()
     snap(frameView, "tabs", terminals: [chosen.view])
 
-    // ---------- 3б. панель плана агента
-    let working = sessions[0]
-    working.applyDemoPlan(AgentPlan(items: [
-        PlanItem(text: "Изучить текущий компонент корзины", active: nil, status: .completed),
-        PlanItem(text: "Добавить расчёт скидки по промокоду", active: nil, status: .completed),
-        PlanItem(text: "Вывести итоговую сумму в корзине", active: "Вывожу итоговую сумму в корзине", status: .inProgress),
-        PlanItem(text: "Написать тесты для расчёта", active: nil, status: .pending),
-        PlanItem(text: "Обновить документацию", active: nil, status: .pending),
-    ], planText: nil))
-    let panel = PlanPanelView(frame: NSRect(x: root0.bounds.width - PlanPanelView.width, y: 0, width: PlanPanelView.width, height: root0.bounds.height - TabBarView.height))
-    root0.addSubview(panel)
-    content.frame.size.width = root0.bounds.width - PlanPanelView.width
-    chosen.view.removeFromSuperview()
-    working.view.removeFromSuperview()
-    working.view.frame = content.bounds.insetBy(dx: 8, dy: 6)
-    working.view.autoresizingMask = [.width, .height]
-    content.addSubview(working.view)
-    tabBar.reload(sessions: sessions, selected: working.id, gridMode: false)
-    tabBar.setPlanActive(true)
-    panel.update(session: working)
-    settle()
-    working.view.terminal.resetToInitialState()
-    working.view.feed(text: "\r\n" + demos[0].screen.joined(separator: "\r\n"))
-    settle()
-    snap(frameView, "plan-panel", terminals: [working.view])
-
     // ---------- 4. настройки агентов и вопрос при первом запуске
     Agents.defaultID = "claude"
     let agents = AgentsWindowController.shared

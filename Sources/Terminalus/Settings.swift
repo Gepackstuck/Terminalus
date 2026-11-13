@@ -81,10 +81,4 @@ enum Settings {
         get { UserDefaults.standard.object(forKey: "useMetal") as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: "useMetal") }
     }
-
-    /// Панель плана агента справа.
-    static var planPanel: Bool {
-        get { UserDefaults.standard.bool(forKey: "planPanel") }
-        set { UserDefaults.standard.set(newValue, forKey: "planPanel") }
-    }
 }

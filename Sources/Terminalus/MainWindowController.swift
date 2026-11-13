@@ -39,7 +39,6 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
     private let tabBar = TabBarView(frame: .zero)
     private let content = NSView()
     private let grid = GridView(frame: .zero)
-    private let planPanel = PlanPanelView(frame: .zero)
     private let catView = CatView(frame: .zero)
 
     private var selected: TerminalSession? { sessions.first { $0.id == selectedID } }
@@ -62,13 +61,11 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         root.autoresizingMask = [.width, .height]
         window.contentView = root
 
-        content.autoresizingMask = []          // размеры задаёт layoutRoot (справа может быть панель плана)
-        planPanel.autoresizingMask = []
+        content.autoresizingMask = [.width, .height]
         content.wantsLayer = true
         content.layer?.backgroundColor = Theme.terminalBG.cgColor
         tabBar.autoresizingMask = [.width, .minYMargin]
         root.addSubview(content)
-        root.addSubview(planPanel)
         root.addSubview(tabBar)
         layoutRoot()
 
@@ -87,7 +84,6 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         tabBar.onFilter = { [weak self] in self?.showGridFilterMenu(from: $0) }
         tabBar.onMove = { [weak self] id, idx in self?.move(id, toInsertionIndex: idx) }
         tabBar.onBackToGrid = { [weak self] in self?.setGrid(true) }
-        tabBar.onTogglePlan = { [weak self] in self?.togglePlanPanel() }
         tabBar.tabMenuProvider = { [weak self] id in self?.tabMenu(for: id) }
         tabBar.onShowPinned = { [weak self] in self?.showPinnedMenu(from: $0) }
 
@@ -495,31 +491,8 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
     private func layoutRoot() {
         guard let root = window?.contentView else { return }
         let h = TabBarView.height
-        let pw: CGFloat = Settings.planPanel ? PlanPanelView.width : 0
         tabBar.frame = NSRect(x: 0, y: root.bounds.height - h, width: root.bounds.width, height: h)
-        content.frame = NSRect(x: 0, y: 0, width: max(0, root.bounds.width - pw), height: root.bounds.height - h)
-        planPanel.frame = NSRect(x: root.bounds.width - pw, y: 0, width: PlanPanelView.width, height: root.bounds.height - h)
-        planPanel.isHidden = pw == 0
-        tabBar.setPlanActive(pw > 0)
-    }
-
-    /// Панель плана агента (⌥⌘P).
-    func togglePlanPanel() {
-        Settings.planPanel.toggle()
-        layoutRoot()
-        selected?.refreshPlan(force: true)
-        planPanel.update(session: selected)
-    }
-
-    func windowDidResize(_ notification: Notification) { layoutRoot() }
-
-    /// Показать/убрать вымышленный план у выбранной вкладки (посмотреть, как выглядит панель).
-    func toggleDemoPlan() {
-        guard let s = selected else { return }
-        s.setDemoPlan(!s.demoPlanActive)
-        if s.demoPlanActive && !Settings.planPanel { togglePlanPanel() }
-        planPanel.update(session: s)
-        grid.update(sessions: sessions)
+        content.frame = NSRect(x: 0, y: 0, width: root.bounds.width, height: root.bounds.height - h)
     }
 
 
@@ -656,7 +629,6 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
             }
         }
         updateCatMood()
-        if Settings.planPanel { planPanel.update(session: selected) }
         guard changed else { return }
         reloadTabBar()
         grid.update(sessions: sessions)
@@ -684,7 +656,6 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
             content.addSubview(v)
         }
         if current.view.window != nil { window?.makeFirstResponder(current.view) }
-        if Settings.planPanel { selected?.refreshPlan(force: true); planPanel.update(session: selected) }
         updateBadge()
         saveState()
     }

@@ -155,13 +155,6 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
     private(set) var contextPercent: Int?
     /// Идентификатор сеанса Claude (из statusLine) — чтобы будить вкладку точным `claude --resume`.
     private(set) var claudeSessionID: String?
-    /// Файл расшифровки сеанса (из statusLine) и прочитанный из него план.
-    private(set) var transcriptPath: String?
-    private(set) var plan: AgentPlan?
-    private var planMTime: Date?
-    private var planCheckedAt = Date.distantPast
-    /// Показан вымышленный пример плана (меню «Вид → Пример плана в панели»).
-    private(set) var demoPlanActive = false
     /// Вкладка в архиве: процессы остановлены, вкладка и её бейдж остаются.
     private(set) var isSleeping = false
     private var selectedAt = Date()
@@ -279,42 +272,6 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
 
     func touch() { selectedAt = Date() }
 
-    /// Обновляет план из расшифровки (не чаще раза в 2 с и только если файл изменился).
-    func refreshPlan(force: Bool = false) {
-        if demoPlanActive { return }
-        guard agentID == "claude", let path = transcriptPath else { if plan != nil { plan = nil }; return }
-        let now = Date()
-        guard force || now.timeIntervalSince(planCheckedAt) >= 2 else { return }
-        planCheckedAt = now
-        guard let m = (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate] as? Date else { return }
-        guard force || m != planMTime else { return }
-        planMTime = m
-        let newPlan = PlanReader.read(transcriptPath: path)
-        if newPlan != plan { plan = newPlan }
-    }
-
-    /// Для демонстрационных скриншотов.
-    func applyDemoPlan(_ p: AgentPlan?) { plan = p }
-
-    /// Вымышленный план — чтобы посмотреть, как выглядит панель, пока у агента нет настоящего.
-    func setDemoPlan(_ on: Bool) {
-        demoPlanActive = on
-        if on {
-            plan = AgentPlan(items: [
-                PlanItem(text: "Изучить, как устроена авторизация сейчас", active: nil, status: .completed),
-                PlanItem(text: "Добавить таблицу сессий в базу", active: nil, status: .completed),
-                PlanItem(text: "Реализовать вход по почте и паролю", active: "Реализую вход по почте и паролю", status: .inProgress),
-                PlanItem(text: "Подключить проверку токена в API", active: nil, status: .pending),
-                PlanItem(text: "Написать тесты для входа и выхода", active: nil, status: .pending),
-                PlanItem(text: "Обновить документацию", active: nil, status: .pending),
-            ], planText: nil)
-        } else {
-            plan = nil
-            planMTime = nil
-            refreshPlan(force: true)
-        }
-    }
-
     /// Для демонстрационных скриншотов: задать вымышленное состояние.
     func applyDemo(status: SessionStatus, model: String?, context: Int?, agent: String?) {
         self.status = status
@@ -350,7 +307,6 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
         guard let data = try? Data(contentsOf: tabFileURL),
               let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return }
         if let sid = obj["session_id"] as? String, !sid.isEmpty { claudeSessionID = sid }
-        if let tp = obj["transcript_path"] as? String, !tp.isEmpty { transcriptPath = tp }
         if let model = obj["model"] as? [String: Any], let n = model["display_name"] as? String { modelName = n }
         if let cw = obj["context_window"] as? [String: Any],
            let p = (cw["used_percentage"] as? NSNumber)?.intValue { contextPercent = p }
@@ -432,9 +388,7 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
     func tick(isSelected: Bool) -> Bool {
         if isSleeping { return false }
         let before = (displayTitle, status, cwd, modelName, contextPercent, agentID)
-        let planBefore = plan
         refreshModel()
-        refreshPlan()
 
         let pid = view.process.shellPid
         if pid > 0, let d = Self.cwd(of: pid), d != cwd {
@@ -479,7 +433,7 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
                 onEvent?(.finished)
             }
         }
-        return before != (displayTitle, status, cwd, modelName, contextPercent, agentID) || plan != planBefore
+        return before != (displayTitle, status, cwd, modelName, contextPercent, agentID)
     }
 
     // MARK: LocalProcessTerminalViewDelegate

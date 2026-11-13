@@ -186,7 +186,6 @@ final class TabBarView: NSView {
     var onToggleGrid: (() -> Void)?
     var onFilter: ((NSView) -> Void)?
     var onBackToGrid: (() -> Void)?
-    var onTogglePlan: (() -> Void)?
     var tabMenuProvider: ((UUID) -> NSMenu?)?
     var onShowPinned: ((NSView) -> Void)?
 
@@ -197,7 +196,6 @@ final class TabBarView: NSView {
     private var addButton: NSButton!
     private var gridButton: NSButton!
     private var filterButton: NSButton!
-    private var planButton: NSButton!
     private let indicator = NSView()
     private var backButton: NSButton!
     let limits = LimitsView(frame: .zero)
@@ -212,8 +210,7 @@ final class TabBarView: NSView {
         gridButton = symbolButton("square.grid.2x2", tip: "Сетка (⇧⌘G)", target: self, action: #selector(gridClicked))
         filterButton = symbolButton("line.3.horizontal.decrease.circle", tip: "Какие вкладки показывать в сетке",
                                     target: self, action: #selector(filterClicked))
-        planButton = symbolButton("checklist", tip: "Панель плана агента (⌥⌘P)", target: self, action: #selector(planClicked))
-        [addButton, gridButton, filterButton, planButton].forEach { addSubview($0!) }
+        [addButton, gridButton, filterButton].forEach { addSubview($0!) }
         backButton = NSButton(title: " К сетке", target: self, action: #selector(backClicked))
         backButton.image = NSImage(systemSymbolName: "square.grid.2x2", accessibilityDescription: "К сетке")
         backButton.imagePosition = .imageLeading
@@ -242,9 +239,6 @@ final class TabBarView: NSView {
     @objc private func gridClicked() { onToggleGrid?() }
     @objc private func filterClicked() { onFilter?(filterButton) }
     @objc private func backClicked() { onBackToGrid?() }
-    @objc private func planClicked() { onTogglePlan?() }
-
-    func setPlanActive(_ on: Bool) { planButton.contentTintColor = on ? Theme.accent : .secondaryLabelColor }
 
     private var returnToGrid = false
 
@@ -309,7 +303,7 @@ final class TabBarView: NSView {
     private var leftInset: CGFloat { 12 }   // кнопки окна теперь в отдельной строке заголовка выше
 
     private var pinnedCount = 0
-    private var rightReserved: CGFloat { limits.preferredWidth + 12 + 94 + (returnToGrid ? 96 : 0) }
+    private var rightReserved: CGFloat { limits.preferredWidth + 12 + 66 + (returnToGrid ? 96 : 0) }
     private var pinnedBlockWidth: CGFloat { pinned.isHidden ? 0 : pinned.preferredWidth + 10 }
 
     private var tabWidth: CGFloat {
@@ -336,9 +330,8 @@ final class TabBarView: NSView {
         addButton.frame = NSRect(x: x + 6, y: (bounds.height - bh) / 2, width: 22, height: bh)
         gridButton.frame = NSRect(x: bounds.width - 38, y: (bounds.height - bh) / 2, width: 24, height: bh)
         filterButton.frame = NSRect(x: bounds.width - 66, y: (bounds.height - bh) / 2, width: 24, height: bh)
-        planButton.frame = NSRect(x: bounds.width - 94, y: (bounds.height - bh) / 2, width: 24, height: bh)
         let lw = limits.preferredWidth
-        limits.frame = NSRect(x: bounds.width - 94 - 12 - lw, y: 0, width: lw, height: bounds.height)
+        limits.frame = NSRect(x: bounds.width - 66 - 12 - lw, y: 0, width: lw, height: bounds.height)
         let bw: CGFloat = 86
         backButton.frame = NSRect(x: limits.frame.minX - 10 - bw, y: (bounds.height - 22) / 2, width: bw, height: 22)
     }
