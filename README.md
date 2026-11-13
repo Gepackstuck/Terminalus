@@ -90,7 +90,7 @@ cd Terminalus
 Два стиля — **пиксельный** (по умолчанию) и векторный; экономный режим на 15 кадров в секунду. Настройки — в меню «Terminalus → Питомцы».
 
 <p align="center"><img src="docs/images/pets-strip.png" width="900" alt="Питомцы в строке заголовка"></p>
-<p align="center"><img src="docs/images/pets-pixel.png" width="600" alt="Пиксельные питомцы"> <img src="docs/images/pets-vector.png" width="260" alt="Векторные питомцы"></p>
+<p align="center"><img src="docs/images/pets-pixel.png" width="600" alt="Пиксельные питомцы"></p>
 
 <sub>Картинки в этом README — рендеры отдельных компонентов, а не скриншоты окна.</sub>
 
