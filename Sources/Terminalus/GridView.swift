@@ -309,12 +309,11 @@ final class GridView: NSView {
         ns[i] = a
         ns[i + 1] = total - a
         tree = t.settingWeights(at: ArraySlice(r.div.path), ns)
-        needsLayout = true
-        layoutSubtreeIfNeeded()
+        needsLayout = true          // перекладка не форсируется: AppKit объединит события в один проход за кадр
     }
 
     override func mouseUp(with event: NSEvent) {
-        if resize != nil { resize = nil; onLayoutChanged?() }
+        if resize != nil { resize = nil; layoutSubtreeIfNeeded(); onLayoutChanged?() }
     }
 
     // MARK: Перестановка окон: перетаскивание шапки с живым предпросмотром

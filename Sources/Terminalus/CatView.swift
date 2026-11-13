@@ -114,9 +114,11 @@ final class CatView: NSView {
 
     private func startTimer() {
         timer?.invalidate()
-        let t = Timer(timeInterval: Settings.petEconomy ? 1.0 / 15.0 : 1.0 / 30.0, repeats: true) { [weak self] _ in
+        let interval = Settings.petEconomy ? 1.0 / 15.0 : 1.0 / 30.0
+        let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tickTimer() }
         }
+        t.tolerance = interval * 0.25          // система может объединять пробуждения — экономит энергию
         RunLoop.main.add(t, forMode: .common)
         timer = t
         last = clockNow()
@@ -435,6 +437,16 @@ final class CatView: NSView {
 
     // MARK: Рисование
 
+    /// Шрифты кэшируем: создание NSFont в каждом кадре заметно дороже самой отрисовки.
+    private static var fonts: [Int: NSFont] = [:]
+    private static func font(_ size: CGFloat) -> NSFont {
+        let key = Int((size * 2).rounded())
+        if let f = fonts[key] { return f }
+        let f = NSFont.systemFont(ofSize: CGFloat(key) / 2, weight: .heavy)
+        fonts[key] = f
+        return f
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         let now = clockNow()
         let celebrating = celebrateStart.map { now.timeIntervalSince($0) < 2.4 } ?? false
@@ -517,7 +529,7 @@ final class CatView: NSView {
         // эффекты
         func text(_ s: String, _ x: CGFloat, _ y: CGFloat, size: CGFloat, color: NSColor, align: CGFloat = 0.5) {
             let a = NSAttributedString(string: s, attributes: [
-                .font: NSFont.systemFont(ofSize: size, weight: .heavy), .foregroundColor: color])
+                .font: Self.font(size), .foregroundColor: color])
             a.draw(at: NSPoint(x: x - a.size().width * align, y: y))
         }
 

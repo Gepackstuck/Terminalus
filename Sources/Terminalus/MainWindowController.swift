@@ -107,6 +107,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
+        timer?.tolerance = 0.3
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -131,7 +132,23 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
+    private var saveWork: DispatchWorkItem?
+
+    /// События приходят пачками (выбор вкладки, смена статуса, перестановка) — записываем состояние один раз.
     func saveState() {
+        saveWork?.cancel()
+        let w = DispatchWorkItem { [weak self] in MainActor.assumeIsolated { self?.writeState() } }
+        saveWork = w
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: w)
+    }
+
+    /// Немедленная запись (закрытие окна, выход из приложения).
+    func flushState() {
+        saveWork?.cancel()
+        writeState()
+    }
+
+    private func writeState() {
         guard !sessions.isEmpty else { return }
         let st = SavedState(
             tabs: sessions.map {
@@ -637,7 +654,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        saveState()
+        flushState()
         timer?.invalidate()
         sessions.forEach { $0.close() }
         sessions.removeAll()

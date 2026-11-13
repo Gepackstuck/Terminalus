@@ -84,15 +84,25 @@ enum FolderBadge {
 final class FolderBadgeView: NSView {
     static let size: CGFloat = 16
 
-    var name: String? { didSet { if oldValue != name { needsDisplay = true; toolTip = name } } }
+    private var cachedColor = NSColor.gray
+    private var cachedText = ""
+
+    var name: String? {
+        didSet {
+            guard oldValue != name else { return }
+            if let n = name { cachedColor = FolderBadge.color(for: n); cachedText = FolderBadge.letters(for: n) }
+            needsDisplay = true
+            toolTip = name
+        }
+    }
 
     override var mouseDownCanMoveWindow: Bool { false }
 
     override func draw(_ dirtyRect: NSRect) {
-        guard let name else { return }
-        FolderBadge.color(for: name).setFill()
+        guard name != nil else { return }
+        cachedColor.setFill()
         NSBezierPath(roundedRect: bounds, xRadius: 4.5, yRadius: 4.5).fill()
-        let text = FolderBadge.letters(for: name)
+        let text = cachedText
         let font = NSFont.systemFont(ofSize: text.count > 1 ? 8.5 : 10, weight: .heavy)
         let str = NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: NSColor.white])
         let sz = str.size()
