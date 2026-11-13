@@ -160,6 +160,8 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
     private(set) var plan: AgentPlan?
     private var planMTime: Date?
     private var planCheckedAt = Date.distantPast
+    /// Показан вымышленный пример плана (меню «Вид → Пример плана в панели»).
+    private(set) var demoPlanActive = false
     /// Вкладка в архиве: процессы остановлены, вкладка и её бейдж остаются.
     private(set) var isSleeping = false
     private var selectedAt = Date()
@@ -279,6 +281,7 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
 
     /// Обновляет план из расшифровки (не чаще раза в 2 с и только если файл изменился).
     func refreshPlan(force: Bool = false) {
+        if demoPlanActive { return }
         guard agentID == "claude", let path = transcriptPath else { if plan != nil { plan = nil }; return }
         let now = Date()
         guard force || now.timeIntervalSince(planCheckedAt) >= 2 else { return }
@@ -292,6 +295,25 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
 
     /// Для демонстрационных скриншотов.
     func applyDemoPlan(_ p: AgentPlan?) { plan = p }
+
+    /// Вымышленный план — чтобы посмотреть, как выглядит панель, пока у агента нет настоящего.
+    func setDemoPlan(_ on: Bool) {
+        demoPlanActive = on
+        if on {
+            plan = AgentPlan(items: [
+                PlanItem(text: "Изучить, как устроена авторизация сейчас", active: nil, status: .completed),
+                PlanItem(text: "Добавить таблицу сессий в базу", active: nil, status: .completed),
+                PlanItem(text: "Реализовать вход по почте и паролю", active: "Реализую вход по почте и паролю", status: .inProgress),
+                PlanItem(text: "Подключить проверку токена в API", active: nil, status: .pending),
+                PlanItem(text: "Написать тесты для входа и выхода", active: nil, status: .pending),
+                PlanItem(text: "Обновить документацию", active: nil, status: .pending),
+            ], planText: nil)
+        } else {
+            plan = nil
+            planMTime = nil
+            refreshPlan(force: true)
+        }
+    }
 
     /// Для демонстрационных скриншотов: задать вымышленное состояние.
     func applyDemo(status: SessionStatus, model: String?, context: Int?, agent: String?) {

@@ -43,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc func showAgents() { AgentsWindowController.shared.present() }
     @objc func togglePlan() { controller.togglePlanPanel() }
+    @objc func toggleDemoPlan() { controller.toggleDemoPlan() }
     @objc func closeTab() { controller.closeCurrent() }
     @objc func toggleGrid() { controller.toggleGrid() }
     @objc func nextTab() { controller.selectNext(1) }
@@ -200,6 +201,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var viewItems: [NSMenuItem] = [
             item("Режим сетки", #selector(toggleGrid), "g", [.command, .shift], target: self),
             item("Панель плана агента", #selector(togglePlan), "p", [.command, .option], target: self),
+            item("Пример плана в панели (для просмотра)", #selector(toggleDemoPlan), target: self),
             .separator(),
             item("Следующая вкладка", #selector(nextTab), "}", [.command], target: self),
             item("Предыдущая вкладка", #selector(prevTab), "{", [.command], target: self),

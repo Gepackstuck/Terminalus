@@ -171,11 +171,11 @@ final class PlanPanelView: NSView {
     func update(session: TerminalSession?) {
         let agent = session?.agentName
         let plan = session?.plan
-        let sig = "\(session?.id.uuidString ?? "-")|\(agent ?? "-")|\(session?.folder ?? "-")|\(plan?.items.map { "\($0.status)\($0.text)\($0.active ?? "")" }.joined(separator: "¦") ?? "")|\(plan?.planText ?? "")"
+        let sig = "\(session?.demoPlanActive == true ? "демо" : "")\(session?.id.uuidString ?? "-")|\(agent ?? "-")|\(session?.folder ?? "-")|\(plan?.items.map { "\($0.status)\($0.text)\($0.active ?? "")" }.joined(separator: "¦") ?? "")|\(plan?.planText ?? "")"
         guard sig != signature else { return }
         signature = sig
 
-        subtitle.stringValue = [session?.folder, agent].compactMap { $0 }.joined(separator: " · ")
+        subtitle.stringValue = ([session?.folder, agent] + [session?.demoPlanActive == true ? "пример" : nil]).compactMap { $0 }.joined(separator: " · ")
         stack.arrangedSubviews.forEach { stack.removeArrangedSubview($0); $0.removeFromSuperview() }
 
         if let plan, !plan.items.isEmpty {

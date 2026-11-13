@@ -513,6 +513,15 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
 
     func windowDidResize(_ notification: Notification) { layoutRoot() }
 
+    /// Показать/убрать вымышленный план у выбранной вкладки (посмотреть, как выглядит панель).
+    func toggleDemoPlan() {
+        guard let s = selected else { return }
+        s.setDemoPlan(!s.demoPlanActive)
+        if s.demoPlanActive && !Settings.planPanel { togglePlanPanel() }
+        planPanel.update(session: s)
+        grid.update(sessions: sessions)
+    }
+
 
     private var appliedFontSize = Settings.fontSize
 
