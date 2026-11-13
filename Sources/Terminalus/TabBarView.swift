@@ -116,7 +116,7 @@ final class TabItemView: NSView, NSDraggingSource {
         let lx = dx + d + 8
         var right = bounds.width - 28
         if !modelLabel.isHidden {
-            let mw = modelLabel.intrinsicContentSize.width
+            let mw = ceil(modelLabel.intrinsicContentSize.width) + 2
             modelLabel.frame = NSRect(x: right - mw, y: (bounds.height - modelLabel.intrinsicContentSize.height) / 2,
                                       width: mw, height: modelLabel.intrinsicContentSize.height)
             right -= mw + 6
@@ -275,7 +275,7 @@ final class TabBarView: NSView {
         }
 
         func apply(_ it: TabItemView, _ s: TerminalSession) {
-            it.update(title: s.displayTitle, status: s.status, tip: s.detailText, folder: s.folder, model: s.modelName,
+            it.update(title: s.displayTitle, status: s.status, tip: s.detailText, folder: s.folder, model: s.modelName ?? s.agentName,
                       tag: s.tag, pinned: false, dimmed: gridMode && !s.inGrid)
             it.isSelected = (s.id == selected)
         }

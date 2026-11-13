@@ -152,7 +152,12 @@ final class LimitsView: NSView {
 
     private let segW: CGFloat = 96
 
-    var preferredWidth: CGFloat { connected ? segW * 2 + 10 : 132 }
+    /// Скрыт, если Claude Code не используется.
+    var isRelevant = true {
+        didSet { isHidden = !isRelevant; superview?.needsLayout = true }
+    }
+
+    var preferredWidth: CGFloat { !isRelevant ? 0 : (connected ? segW * 2 + 10 : 132) }
 
     private func refreshLayout() {
         needsDisplay = true

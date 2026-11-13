@@ -28,7 +28,7 @@ enum FolderBadge {
 
     static func color(for name: String) -> NSColor { palette[Int(stableHash(name)) % palette.count] }
 
-    /// Части названия: «HRAdmin» → [HR, Admin], «myProject2» → [my, Project, 2], «api-gateway» → [api, gateway].
+    /// Части названия: «XMLParser» → [XML, Parser], «myProject2» → [my, Project, 2], «api-gateway» → [api, gateway].
     static func tokens(_ name: String) -> [String] {
         var out: [String] = []
         var cur = ""
@@ -39,7 +39,7 @@ enum FolderBadge {
             if let prev = cur.last {
                 let next: Character? = i + 1 < chars.count ? chars[i + 1] : nil
                 let lowerToUpper = prev.isLowercase && ch.isUppercase
-                let acronymEnd = prev.isUppercase && ch.isUppercase && (next?.isLowercase ?? false)   // HRAdmin: перед «A»
+                let acronymEnd = prev.isUppercase && ch.isUppercase && (next?.isLowercase ?? false)   // XMLParser: перед «P»
                 let digitEdge = prev.isNumber != ch.isNumber
                 if lowerToUpper || acronymEnd || digitEdge { flush() }
             }
@@ -50,7 +50,7 @@ enum FolderBadge {
     }
 
     /// Две буквы, чтобы папки различались:
-    /// «HRAdmin» → HA, «myProject» → MP, «api-gateway» → AG, «reports2024» → R2,
+    /// «XMLParser» → XP, «myProject» → MP, «api-gateway» → AG, «reports2024» → R2,
     /// одно слово: «terminalus» → Te, «tvclean» → Tv, «vibecode» → Vi, «API» → AP, «~» → ~.
     static func letters(for name: String) -> String {
         if name == "~" { return "~" }

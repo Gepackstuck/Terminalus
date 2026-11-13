@@ -2,11 +2,17 @@ import AppKit
 import SwiftTerm
 import Darwin
 
-enum LaunchMode: String, Codable {
+enum LaunchMode {
     case shell
-    case claude            // новый сеанс claude
-    case claudeContinue    // claude --continue (после восстановления)
-    case claudeResume      // claude --resume <id> (пробуждение из архива)
+    case agent(String)         // запустить агента (id профиля)
+    case agentResume(String)   // продолжить сеанс агента
+
+    var agentID: String? {
+        switch self {
+        case .shell: return nil
+        case .agent(let id), .agentResume(let id): return id
+        }
+    }
 }
 
 /// Терминальный view с macOS-шорткатами редактирования текста.
@@ -134,7 +140,11 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
     private(set) var folder: String?
     private(set) var status: SessionStatus = .idle
     /// Сессия когда-либо запускала Claude (для восстановления через `claude --continue`).
-    private(set) var sawClaude = false
+    /// Агент, которого запускали в этой вкладке (определяется по процессу и запоминается).
+    private(set) var agentID: String?
+    private var lastForegroundPID: pid_t = 0
+    var sawClaude: Bool { agentID == "claude" }
+    var agentName: String? { Agents.profile(agentID)?.name }
     /// Показывать ли вкладку в режиме сетки.
     var inGrid = true
     var isPinned = false
@@ -161,7 +171,7 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
         self.inGrid = inGrid
         self.isPinned = pinned
         self.fontSize = fontSize
-        sawClaude = mode != .shell
+        agentID = mode.agentID
         view = TerminalPaneView(frame: NSRect(x: 0, y: 0, width: 800, height: 500))
         view.processDelegate = self
         view.font = NSFont.monospacedSystemFont(ofSize: fontSize ?? Settings.fontSize, weight: .regular)
@@ -195,11 +205,12 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
         var args = ["-l"]
         switch mode {
         case .shell: break
-        case .claude:         args += ["-i", "-c", "claude; exec '\(shell)' -l"]
-        case .claudeContinue: args += ["-i", "-c", "claude --continue; exec '\(shell)' -l"]
-        case .claudeResume:
-            let cmd = resumeID.map { "claude --resume '\($0)'" } ?? "claude --continue"
-            args += ["-i", "-c", "\(cmd); exec '\(shell)' -l"]
+        case .agent(let id):
+            if let p = Agents.profile(id), !p.command.isEmpty { args += ["-i", "-c", "\(p.command); exec '\(shell)' -l"] }
+        case .agentResume(let id):
+            if let p = Agents.profile(id), !p.command.isEmpty {
+                args += ["-i", "-c", "\(p.resumeCommand(sessionID: resumeID)); exec '\(shell)' -l"]
+            }
         }
         var env = Terminal.getEnvironmentVariables(termName: "xterm-256color", trueColor: true)
         env.append("TERM_PROGRAM=Terminalus")
@@ -215,18 +226,16 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
         view.feed(text: "\r\n  \u{1b}[2m☾ Вкладка в архиве — нажмите на неё, чтобы разбудить\u{1b}[0m\r\n")
     }
 
-    /// Процесс на переднем плане — оболочка или claude (а не dev-сервер, npm и т. п.): тогда можно спать без потерь.
-    private var foregroundIsShellOrClaude: Bool {
+    /// Процесс на переднем плане — оболочка или известный агент (а не dev-сервер, npm и т. п.): тогда можно спать без потерь.
+    private var foregroundIsShellOrAgent: Bool {
         let fg = tcgetpgrp(view.process.childfd)
         guard fg > 0 else { return false }
         if fg == view.process.shellPid { return true }
-        var buf = [CChar](repeating: 0, count: 4096)
-        guard proc_pidpath(fg, &buf, UInt32(buf.count)) > 0 else { return false }
-        return String(cString: buf).localizedCaseInsensitiveContains("/claude")
+        return Agents.match(pid: fg) != nil
     }
 
     func canHibernate(minutes: Double, isSelected: Bool) -> Bool {
-        guard isPinned, !isSleeping, !isSelected, status == .idle, foregroundIsShellOrClaude else { return false }
+        guard isPinned, !isSleeping, !isSelected, status == .idle, foregroundIsShellOrAgent else { return false }
         let lastTouch = max(view.lastActivity, view.lastInput, selectedAt)
         return Date().timeIntervalSince(lastTouch) >= minutes * 60
     }
@@ -258,10 +267,18 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
         view.feed(text: "\r\n  \u{1b}[2m☾ Поднимаю вкладку из архива…\u{1b}[0m\r\n")
         var dir = cwd ?? NSHomeDirectory()
         if !FileManager.default.fileExists(atPath: dir) { dir = NSHomeDirectory() }
-        launch(mode: sawClaude ? .claudeResume : .shell, resumeID: claudeSessionID, directory: dir)
+        launch(mode: agentID.map { LaunchMode.agentResume($0) } ?? LaunchMode.shell, resumeID: claudeSessionID, directory: dir)
     }
 
     func touch() { selectedAt = Date() }
+
+    /// Для демонстрационных скриншотов: задать вымышленное состояние.
+    func applyDemo(status: SessionStatus, model: String?, context: Int?, agent: String?) {
+        self.status = status
+        modelName = model
+        contextPercent = context
+        agentID = agent
+    }
 
     func close() {
         onExit = nil
@@ -298,6 +315,7 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
     /// Подпись для подсказки.
     var detailText: String {
         var t = displayTitle
+        if let a = agentName { t += "\nАгент: \(a)" }
         if let m = modelName { t += "\nМодель: \(m)" }
         if let c = contextPercent { t += "\nКонтекст: \(c)%" }
         return t
@@ -369,7 +387,7 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
     /// Раз в секунду: обновляет папку, модель и статус. Возвращает true, если что-то изменилось.
     func tick(isSelected: Bool) -> Bool {
         if isSleeping { return false }
-        let before = (displayTitle, status, cwd, modelName, contextPercent)
+        let before = (displayTitle, status, cwd, modelName, contextPercent, agentID)
         refreshModel()
 
         let pid = view.process.shellPid
@@ -378,7 +396,17 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
             folder = Self.folderName(d)
         }
 
-        let commandRunning = hasRunningCommand            // в шелле запущена команда (claude, npm …)
+        let commandRunning = hasRunningCommand            // в шелле запущена команда (агент, npm …)
+        if commandRunning {
+            // Агент, запущенный вручную, подхватывается и запоминается за вкладкой.
+            let fg = tcgetpgrp(view.process.childfd)
+            if fg != lastForegroundPID {
+                lastForegroundPID = fg
+                if let p = Agents.match(pid: fg) { agentID = p.id }
+            }
+        } else {
+            lastForegroundPID = 0
+        }
         let spinner = rawTitle?.unicodeScalars.first.map(Self.isSpinnerGlyph) ?? false
         let active = Date().timeIntervalSince(view.lastActivity) < 1.5
         if spinner || (commandRunning && active) { lastWorking = Date() }
@@ -405,7 +433,7 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
                 onEvent?(.finished)
             }
         }
-        return before != (displayTitle, status, cwd, modelName, contextPercent)
+        return before != (displayTitle, status, cwd, modelName, contextPercent, agentID)
     }
 
     // MARK: LocalProcessTerminalViewDelegate
@@ -414,7 +442,7 @@ final class TerminalSession: LocalProcessTerminalViewDelegate {
 
     func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
         rawTitle = title
-        if title.localizedCaseInsensitiveContains("claude") { sawClaude = true }
+        if title.localizedCaseInsensitiveContains("claude"), agentID == nil { agentID = "claude" }
     }
 
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}

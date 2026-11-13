@@ -14,6 +14,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.showWindow(nil)
         controller.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        NotificationCenter.default.addObserver(forName: Agents.didChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { if self != nil { NSApp.mainMenu = self?.buildMenu() } }
+        }
+        DispatchQueue.main.async { [weak self] in
+            AgentsWindowController.promptFirstRun(over: self?.controller.window)
+            NSApp.mainMenu = self?.buildMenu()          // в заголовках пунктов — выбранный агент
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) { controller?.flushState() }
@@ -28,9 +35,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: Actions (target = self, поэтому не зависят от responder chain)
 
     @objc func newTab() { controller.newSession() }
-    @objc func newClaudeTab() { controller.newSession(runClaude: true) }
+    @objc func newAgentTab() { controller.newSession(agent: Agents.defaultProfile) }
     @objc func newTabHere() { controller.newSession(inCurrentFolder: true) }
-    @objc func newClaudeTabHere() { controller.newSession(runClaude: true, inCurrentFolder: true) }
+    @objc func newAgentTabHere() { controller.newSession(agent: Agents.defaultProfile, inCurrentFolder: true) }
+    @objc func newTabWithAgent(_ sender: NSMenuItem) {
+        controller.newSession(agent: Agents.profile(sender.representedObject as? String))
+    }
+    @objc func showAgents() { AgentsWindowController.shared.present() }
     @objc func closeTab() { controller.closeCurrent() }
     @objc func toggleGrid() { controller.toggleGrid() }
     @objc func nextTab() { controller.selectNext(1) }
@@ -103,6 +114,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return out
     }
 
+    private func agentTitle(_ base: String) -> String {
+        Agents.defaultProfile.map { "\(base) (\($0.name))" } ?? base
+    }
+
     // MARK: Menu
 
     private func item(_ title: String, _ action: Selector?, _ key: String = "",
@@ -136,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             item("О Terminalus", #selector(showAbout), target: self),
             .separator(),
             item("Шрифт по умолчанию…", #selector(showAppearance), ",", target: self),
+            item("Агенты…", #selector(showAgents), target: self),
             item("Показывать лимиты Claude…", #selector(connectLimits), target: self),
             .separator(),
             // отдельный раздел настроек питомцев
@@ -159,9 +175,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         main.addItem(submenu("Терминал", [
             item("Новая вкладка", #selector(newTab), "t", target: self),
-            item("Новая вкладка с Claude", #selector(newClaudeTab), "t", [.command, .shift], target: self),
+            item(agentTitle("Новая вкладка с агентом"), #selector(newAgentTab), "t", [.command, .shift], target: self),
+            submenu("Новая вкладка с…", Agents.all.map { p in
+                let i = item(p.name + (Agents.isInstalled(p) ? "" : "  (не найден)"), #selector(newTabWithAgent(_:)), target: self)
+                i.representedObject = p.id
+                return i
+            }),
             item("Новая вкладка в папке текущей", #selector(newTabHere), "t", [.command, .option], target: self),
-            item("Новая вкладка с Claude в папке текущей", #selector(newClaudeTabHere), "t", [.command, .option, .shift], target: self),
+            item(agentTitle("Новая вкладка с агентом в папке текущей"), #selector(newAgentTabHere), "t", [.command, .option, .shift], target: self),
             .separator(),
             item("Закрыть вкладку", #selector(closeTab), "w", target: self),
         ]))

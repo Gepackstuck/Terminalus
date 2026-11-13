@@ -8,6 +8,7 @@ private struct SavedTab: Codable {
     var tag: String?
     var fontSize: Double?
     var claudeSession: String?
+    var agent: String?
 }
 private struct SavedState: Codable {
     var tabs: [SavedTab]
@@ -117,7 +118,8 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         if let data = UserDefaults.standard.data(forKey: Self.stateKey),
            let st = try? JSONDecoder().decode(SavedState.self, from: data), !st.tabs.isEmpty {
             for t in st.tabs {
-                addSession(mode: t.claude ? .claudeContinue : .shell, directory: t.cwd, inGrid: t.inGrid,
+                let agent = t.agent ?? (t.claude ? "claude" : nil)
+                addSession(mode: agent.map { LaunchMode.agentResume($0) } ?? LaunchMode.shell, directory: t.cwd, inGrid: t.inGrid,
                            pinned: t.pinned ?? false, tag: t.tag.flatMap(TagColor.init(rawValue:)),
                            fontSize: t.fontSize.map { CGFloat($0) }, select: false,
                            sleeping: t.pinned ?? false, claudeSession: t.claudeSession)   // закреплённые не поднимаем, пока не откроют
@@ -154,7 +156,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
             tabs: sessions.map {
                 SavedTab(cwd: $0.cwd, claude: $0.sawClaude, inGrid: $0.inGrid, pinned: $0.isPinned,
                          tag: $0.tag?.rawValue, fontSize: $0.fontSize.map { Double($0) },
-                         claudeSession: $0.claudeSessionID)
+                         claudeSession: $0.claudeSessionID, agent: $0.agentID)
             },
             selected: sessions.firstIndex { $0.id == selectedID } ?? 0,
             grid: gridMode,
@@ -187,9 +189,9 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
 
     /// По умолчанию новая вкладка открывается в общей папке (Settings.defaultFolder);
     /// `inCurrentFolder` — в папке текущей вкладки (для задач внутри проекта).
-    func newSession(runClaude: Bool = false, inCurrentFolder: Bool = false) {
+    func newSession(agent: AgentProfile? = nil, inCurrentFolder: Bool = false) {
         let dir = inCurrentFolder ? (selected?.cwd ?? Settings.defaultFolder) : Settings.defaultFolder
-        addSession(mode: runClaude ? .claude : .shell, directory: dir)
+        addSession(mode: agent.map { LaunchMode.agent($0.id) } ?? LaunchMode.shell, directory: dir)
         returnToGrid = false
         refresh()
     }
@@ -220,8 +222,8 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         alert.alertStyle = .warning
         alert.messageText = "Закрыть вкладку «\(s.displayTitle)»?"
         if s.hasRunningCommand {
-            alert.informativeText = s.sawClaude
-                ? "В ней запущен Claude или другая команда. Сеанс будет завершён, несохранённая работа может потеряться."
+            alert.informativeText = s.agentName != nil
+                ? "В ней запущен агент (\(s.agentName ?? "")) или другая команда. Сеанс будет завершён, несохранённая работа может потеряться."
                 : "В ней выполняется команда. Она будет завершена."
         } else {
             alert.informativeText = "Вкладка закреплена."
@@ -571,6 +573,9 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         let store = LimitsStore.shared
         let changed = store.refresh()
         let connected = store.isConnected
+        // Виджет лимитов нужен, только если пользуются Claude Code (у друга без Claude он скрыт).
+        let relevant = Agents.defaultID == "claude" || connected || sessions.contains { $0.agentID == "claude" }
+        if tabBar.limits.isRelevant != relevant { tabBar.limits.isRelevant = relevant }
         guard changed || force || tabBar.limits.connected != connected else { return }
         tabBar.limits.connected = connected
         tabBar.limits.five = store.five
