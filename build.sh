@@ -53,7 +53,7 @@ cp Resources/AppIcon.icns Resources/CHANGELOG.md "$APP/Contents/Resources/"
 # Шейдер для Metal-рендерера SwiftTerm: без него он не включается и терминалы рисуются на CPU
 cp Vendor/SwiftTerm/Sources/SwiftTerm/Apple/Metal/Shaders.metal "$APP/Contents/Resources/"
 touch "$APP"
-codesign --force --deep -s - "$APP" >/dev/null 2>&1 || true
+codesign --force --deep -s - -r="designated => identifier \"com.terminalus.app\"" "$APP" >/dev/null 2>&1 || true
 echo "✓ $APP  ($(lipo -archs "$APP/Contents/MacOS/Terminalus"))"
 
 [ "${1:-}" = "run" ] && open "$APP"

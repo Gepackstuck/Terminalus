@@ -8,10 +8,27 @@
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundleExecutable</key><string>Terminalus</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.21.3</string>
-    <key>CFBundleVersion</key><string>37</string>
+    <key>CFBundleShortVersionString</key><string>0.22.0</string>
+    <key>CFBundleVersion</key><string>38</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSHighResolutionCapable</key><true/>
+    <key>NSMicrophoneUsageDescription</key><string>Агентам и программам в терминале нужен микрофон (например, для голосового ввода).</string>
+    <key>NSCameraUsageDescription</key><string>Агентам и программам в терминале нужна камера.</string>
+    <key>NSLocalNetworkUsageDescription</key><string>Агентам и программам в терминале нужен доступ к устройствам и сервисам в локальной сети.</string>
+    <key>NSBonjourServices</key><array><string>_http._tcp</string><string>_https._tcp</string><string>_ssh._tcp</string></array>
+    <key>NSSpeechRecognitionUsageDescription</key><string>Агентам и программам в терминале нужно распознавание речи.</string>
+    <key>NSAppleEventsUsageDescription</key><string>Агентам и программам в терминале нужно управлять другими приложениями.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key><string>Агентам и программам в терминале нужен Bluetooth.</string>
+    <key>NSLocationUsageDescription</key><string>Агентам и программам в терминале нужно определять местоположение.</string>
+    <key>NSContactsUsageDescription</key><string>Агентам и программам в терминале нужен доступ к контактам.</string>
+    <key>NSCalendarsUsageDescription</key><string>Агентам и программам в терминале нужен доступ к календарю.</string>
+    <key>NSRemindersUsageDescription</key><string>Агентам и программам в терминале нужен доступ к напоминаниям.</string>
+    <key>NSPhotoLibraryUsageDescription</key><string>Агентам и программам в терминале нужен доступ к фотографиям.</string>
+    <key>NSDesktopFolderUsageDescription</key><string>Агентам и программам в терминале нужен доступ к папке «Рабочий стол».</string>
+    <key>NSDocumentsFolderUsageDescription</key><string>Агентам и программам в терминале нужен доступ к папке «Документы».</string>
+    <key>NSDownloadsFolderUsageDescription</key><string>Агентам и программам в терминале нужен доступ к папке «Загрузки».</string>
+    <key>NSNetworkVolumesUsageDescription</key><string>Агентам и программам в терминале нужен доступ к сетевым томам.</string>
+    <key>NSRemovableVolumesUsageDescription</key><string>Агентам и программам в терминале нужен доступ к внешним дискам.</string>
 </dict>
 </plist>
