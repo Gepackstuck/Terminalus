@@ -34,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Actions (target = self, поэтому не зависят от responder chain)
 
-    @objc func newTab() { controller.newSession() }
+    @objc func newTab() { controller.chooseNewSession() }
     @objc func newAgentTab() { controller.newSession(agent: Agents.defaultProfile) }
     @objc func newTabHere() { controller.newSession(inCurrentFolder: true) }
     @objc func newAgentTabHere() { controller.newSession(agent: Agents.defaultProfile, inCurrentFolder: true) }

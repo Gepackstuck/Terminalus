@@ -24,3 +24,18 @@ index 112fd4d..cffd6d7 100644
          }
          if lines == 0 {
              return
+diff --git a/Sources/SwiftTerm/Apple/AppleTerminalView.swift b/Sources/SwiftTerm/Apple/AppleTerminalView.swift
+index 5f8a684..5666f9d 100644
+--- a/Sources/SwiftTerm/Apple/AppleTerminalView.swift
++++ b/Sources/SwiftTerm/Apple/AppleTerminalView.swift
+@@ -2744,10 +2744,6 @@ extension TerminalView {
+     func feedPrepare()
+     {
+         search.invalidate()
+-        // Preserve manual selection while output is streaming when mouse reporting is disabled.
+-        if allowMouseReporting {
+-            selection.active = false
+-        }
+         startDisplayUpdates()
+     }
+     

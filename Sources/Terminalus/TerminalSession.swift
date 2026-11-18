@@ -37,6 +37,8 @@ final class TerminalPaneView: LocalProcessTerminalView {
         super.mouseDown(with: event)
     }
 
+    override func linefeed(source: Terminal) {}
+
     override func dataReceived(slice: ArraySlice<UInt8>) {
         super.dataReceived(slice: slice)
         let now = Date()

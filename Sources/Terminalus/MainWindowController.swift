@@ -79,7 +79,7 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         tabBar.onSelect = { [weak self] in self?.select($0) }
         tabBar.onDoubleClick = { [weak self] in self?.revealInGrid($0) }
         tabBar.onClose = { [weak self] in self?.requestClose($0) }
-        tabBar.onNew = { [weak self] in self?.newSession() }
+        tabBar.onNew = { [weak self] in self?.chooseNewSession() }
         tabBar.onToggleGrid = { [weak self] in self?.toggleGrid() }
         tabBar.onFilter = { [weak self] in self?.showGridFilterMenu(from: $0) }
         tabBar.onMove = { [weak self] id, idx in self?.move(id, toInsertionIndex: idx) }
@@ -194,6 +194,26 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
         addSession(mode: agent.map { LaunchMode.agent($0.id) } ?? LaunchMode.shell, directory: dir)
         returnToGrid = false
         refresh()
+    }
+
+    func chooseNewSession() {
+        let menu = NSMenu()
+        let choices = ["claude", "qwen"].compactMap { Agents.profile($0) }
+        for p in choices {
+            let item = NSMenuItem(title: p.name + (Agents.isInstalled(p) ? "" : "  (не найден)"), action: #selector(newSessionChoice(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = p.id
+            menu.addItem(item)
+        }
+        let plain = NSMenuItem(title: "Просто терминал", action: #selector(newSessionChoice(_:)), keyEquivalent: "")
+        plain.target = self
+        plain.representedObject = ""
+        menu.addItem(plain)
+        tabBar.popUpNewMenu(menu)
+    }
+
+    @objc private func newSessionChoice(_ sender: NSMenuItem) {
+        newSession(agent: Agents.profile(sender.representedObject as? String))
     }
 
     func closeSession(_ id: UUID) {

@@ -236,6 +236,10 @@ final class TabBarView: NSView {
     required init?(coder: NSCoder) { fatalError() }
 
     @objc private func newClicked() { onNew?() }
+
+    func popUpNewMenu(_ menu: NSMenu) {
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: addButton.isFlipped ? addButton.bounds.height : 0), in: addButton)
+    }
     @objc private func gridClicked() { onToggleGrid?() }
     @objc private func filterClicked() { onFilter?(filterButton) }
     @objc private func backClicked() { onBackToGrid?() }
