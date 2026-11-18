@@ -46,8 +46,8 @@ enum Agents {
         AgentProfile(id: "opencode", name: "opencode", command: "opencode",
                      resume: "opencode --continue", resumeFallback: "",
                      match: ["opencode"], builtIn: true, hasLimits: false),
-        AgentProfile(id: "qwen", name: "Qwen (Ollama)", command: "ollama run qwen3:30b",
-                     resume: "ollama run qwen3:30b", resumeFallback: "",
+        AgentProfile(id: "qwen", name: "Qwen (Ollama)", command: "ollama run qwen3:30b-a3b",
+                     resume: "ollama run qwen3:30b-a3b", resumeFallback: "",
                      match: ["ollama"], builtIn: true, hasLimits: false),
         AgentProfile(id: "aider", name: "Aider", command: "aider",
                      resume: "aider --restore-chat-history", resumeFallback: "",
@@ -65,6 +65,14 @@ enum Agents {
             var list: [AgentProfile] = []
             if let d = UserDefaults.standard.data(forKey: key),
                let l = try? JSONDecoder().decode([AgentProfile].self, from: d) { list = l }
+            list = list.reduce(into: [AgentProfile]()) { acc, p in
+                var q = p
+                if q.id == "qwen", q.command == "ollama run qwen3:30b" {
+                    q.command = "ollama run qwen3:30b-a3b"
+                    q.resume = "ollama run qwen3:30b-a3b"
+                }
+                acc.append(q)
+            }
             for p in presets where !list.contains(where: { $0.id == p.id }) { list.append(p) }   // новые пресеты подхватываются сами
             cache = list
             return list
