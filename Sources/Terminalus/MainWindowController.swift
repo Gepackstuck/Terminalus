@@ -284,6 +284,11 @@ final class MainWindowController: NSWindowController, NSWindowDelegate {
             if s.view.window != nil { window?.makeFirstResponder(s.view) }
             updateBadge()
             saveState()
+        } else if s.view.superview === content {
+            reloadTabBar()
+            if s.view.window != nil { window?.makeFirstResponder(s.view) }
+            updateBadge()
+            saveState()
         } else {
             refresh()
         }
