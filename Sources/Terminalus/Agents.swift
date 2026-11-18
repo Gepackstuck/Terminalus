@@ -46,8 +46,8 @@ enum Agents {
         AgentProfile(id: "opencode", name: "opencode", command: "opencode",
                      resume: "opencode --continue", resumeFallback: "",
                      match: ["opencode"], builtIn: true, hasLimits: false),
-        AgentProfile(id: "qwen", name: "Qwen (Ollama)", command: "ollama run qwen3:30b-a3b",
-                     resume: "ollama run qwen3:30b-a3b", resumeFallback: "",
+        AgentProfile(id: "qwen", name: "Qwen (Ollama)", command: "ollama run qwen3:30b-instruct",
+                     resume: "ollama run qwen3:30b-instruct", resumeFallback: "",
                      match: ["ollama"], builtIn: true, hasLimits: false),
         AgentProfile(id: "aider", name: "Aider", command: "aider",
                      resume: "aider --restore-chat-history", resumeFallback: "",
@@ -67,9 +67,9 @@ enum Agents {
                let l = try? JSONDecoder().decode([AgentProfile].self, from: d) { list = l }
             list = list.reduce(into: [AgentProfile]()) { acc, p in
                 var q = p
-                if q.id == "qwen", q.command == "ollama run qwen3:30b" {
-                    q.command = "ollama run qwen3:30b-a3b"
-                    q.resume = "ollama run qwen3:30b-a3b"
+                if q.id == "qwen", ["ollama run qwen3:30b", "ollama run qwen3:30b-a3b"].contains(q.command) {
+                    q.command = "ollama run qwen3:30b-instruct"
+                    q.resume = "ollama run qwen3:30b-instruct"
                 }
                 acc.append(q)
             }
