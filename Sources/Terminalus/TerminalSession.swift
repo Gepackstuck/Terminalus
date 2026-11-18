@@ -29,6 +29,7 @@ final class TerminalPaneView: LocalProcessTerminalView {
     override init(frame: NSRect) {
         super.init(frame: frame)
         registerForDraggedTypes([.fileURL, .string])
+        allowMouseReporting = false
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -36,8 +37,6 @@ final class TerminalPaneView: LocalProcessTerminalView {
         onFocus?()
         super.mouseDown(with: event)
     }
-
-    override func linefeed(source: Terminal) {}
 
     override func dataReceived(slice: ArraySlice<UInt8>) {
         super.dataReceived(slice: slice)
