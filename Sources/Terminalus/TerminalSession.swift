@@ -29,14 +29,36 @@ final class TerminalPaneView: LocalProcessTerminalView {
     override init(frame: NSRect) {
         super.init(frame: frame)
         registerForDraggedTypes([.fileURL, .string])
-        allowMouseReporting = false
     }
     required init?(coder: NSCoder) { fatalError() }
 
+    private var pressEvent: NSEvent?
+    private var didDrag = false
+
     override func mouseDown(with event: NSEvent) {
         onFocus?()
+        pressEvent = event
+        didDrag = false
+        allowMouseReporting = false
         super.mouseDown(with: event)
     }
+
+    override func mouseDragged(with event: NSEvent) {
+        didDrag = true
+        super.mouseDragged(with: event)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        super.mouseUp(with: event)
+        let press = pressEvent
+        pressEvent = nil
+        allowMouseReporting = true
+        guard !didDrag, let press, !event.modifierFlags.contains(.command), terminal.mouseMode != .off else { return }
+        super.mouseDown(with: press)
+        super.mouseUp(with: event)
+    }
+
+    override func linefeed(source: Terminal) {}
 
     override func dataReceived(slice: ArraySlice<UInt8>) {
         super.dataReceived(slice: slice)
